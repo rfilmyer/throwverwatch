@@ -1,5 +1,6 @@
 # throwverwatch
 Overwatch Stats Collector - bind to a hotkey and save your SR/winrate at a point in time!
+
 Ever check your SR at the end of a season and wonder how you lost 1000 points? I can't do everything, but I can help show you when you started trending down! 
 
 # Project Status
