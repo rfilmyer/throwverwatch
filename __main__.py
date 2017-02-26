@@ -19,6 +19,7 @@ parser.add_argument("--region", dest="region", default="us",
                     help="Overwatch Region (us, kr, eu)")
 parser.add_argument("--platform", dest="platform", default="pc",
                     help="Platform (pc, ps4, xbone)")
+parser.add_argument("--hotkey", dest="hotkey", default="home", help="Specify a hotkey/key combo (ex: 'home', 'ctrl+f')")
 args = parser.parse_args()
 
 HEROES = ["Genji", "McCree", "Pharah", "Reaper", "Soldier: 76", "Sombra", "Tracer", "Bastion", "Hanzo", "Junkrat",
@@ -216,6 +217,9 @@ def save_statistics(stats: dict, writer: csv.writer):
 
 warned_linux = False
 csv_filename = check_filename(args.output_file)
+print("Collecting stats for battletag {bt} in region {reg} and platform {plat}".format(bt=args.battletag,
+                                                                                       reg=args.region,
+                                                                                       plat=args.platform))
 with get_writer(csv_filename) as csv_writer:
     while True:
         player_statistics = get_statistics(args.battletag, device=args.platform, region=args.region)
@@ -224,4 +228,4 @@ with get_writer(csv_filename) as csv_writer:
         print("{wins} comp wins out of {games} games.".format(wins=player_statistics["competitive_wins"],
                                                               games=player_statistics["competitive_games"]))
         save_statistics(player_statistics, csv_writer)
-        warned_linux = retrigger(linux_warning=warned_linux)
+        warned_linux = retrigger(hotkey=args.hotkey, linux_warning=warned_linux)
