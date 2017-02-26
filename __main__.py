@@ -1,5 +1,10 @@
 import logging
 import argparse
+import csv
+import os
+from datetime import datetime
+from contextlib import contextmanager
+
 import requests
 import keyboard
 from bs4 import BeautifulSoup
@@ -9,6 +14,7 @@ logger = logging.getLogger("throwverwatch")
 parser = argparse.ArgumentParser(description="Track Overwatch Stats")
 parser.add_argument("battletag", nargs="?", default="Calvin#1337",
                     help="Your Battle.net username in the format 'Calvin#1337'")
+parser.add_argument("output_file", nargs="?", default=None, help="The CSV file in which to save stats.")
 parser.add_argument("--region", dest="region", default="us",
                     help="Overwatch Region (us, kr, eu)")
 parser.add_argument("--platform", dest="platform", default="pc",
@@ -111,7 +117,7 @@ def parse_stats_page(soup: BeautifulSoup) -> dict:
     return stats
 
 
-def get_statistics(battletag: str, device: str = 'pc', region: str = 'us', session: str = None) -> dict:
+def get_statistics(battletag: str, device: str = 'pc', region: str = 'us', session: requests.Session = None) -> dict:
     return parse_stats_page(get_page(assemble_url(battletag, device=device, region=region), session=session))
 
 
@@ -134,13 +140,74 @@ def retrigger(hotkey: str = 'home', linux_warning: bool = False):
 
 linux_warning = False
 
-while True:
-    #keyboard.wait('ctrl')
-    stats = get_statistics(args.battletag, device=args.platform, region=args.region)
-    print("Your SR is {0}.".format(stats["season_rank"]))
-    print("{wins} qp wins.".format(wins=stats["quick_play_wins"]))
-    print("{wins} comp wins out of {games} games.".format(wins=stats["competitive_wins"], games=stats["competitive_games"]))
-    for hero, minutes in stats["heroes"].items():
-        print("{hero}: {time} Minutes Played".format(hero=hero, time=minutes))
-    linux_warning = retrigger(linux_warning=linux_warning)
+def check_filename(filename: str = None) -> str:
+    """
+    If a filename is supplied, check if that file exists. Otherwise, returns a new filename
+    :param filename:
+    :return: A validated filename
+    """
+    invalid_file = False
+    if filename:
+        if os.path.exists(filename):
+            return filename
+        else:
+            invalid_file = True
+    else:
+        invalid_file = True
+    if invalid_file:
+        # make a new file with a specific filename
+        def make_default_filename():
+            return "throwverwatch-{datetime}.csv".format(datetime=datetime.now().strftime("%Y%m%d-%H%M%S"))
+
+        def make_filename_with_fudge(fudge):
+            return "throwverwatch-{datetime}-{fudge}.csv".format(datetime=datetime.now().strftime("%Y%m%d-%H%M%S"), fudge=fudge)
+
+        if not os.path.exists(make_default_filename()):
+            filename = make_default_filename()
+        while os.path.exists(make_default_filename()):
+            fudge = 1
+            while os.path.exists(make_filename_with_fudge(fudge)):
+                fudge += 1
+                if fudge > 1000:
+                    raise IOError("Tried creating a new CSV, but too many files named like {filename}".format(filename=make_filename_with_fudge(fudge)))
+            if not os.path.exists(make_filename_with_fudge(fudge)):
+                filename = make_filename_with_fudge(fudge)
+                break
+        return filename
+        # with open(filename, 'w') as csvfile:
+        #     writer = csv.writer(csvfile)
+        #     writer.writerow(["Time", "SR", "Competitive Wins", "Competitive Games", "Quick Play Wins"])
+        #     return writer
+
+@contextmanager
+def get_writer(filename):
+    if os.path.exists(filename):
+        csvfile = open(filename, 'a')
+        yield csv.writer(csvfile)
+        csvfile.close()
+    else:
+        csvfile = open(filename, 'w')
+        writer = csv.writer(csvfile)
+        writer.writerow(["Time", "SR", "Competitive Wins", "Competitive Games", "Quick Play Wins"])
+        yield writer
+        csvfile.close()
+
+
+def save_statistics(stats: dict, writer: csv.writer):
+        writer.writerow([datetime.now().isoformat(" "),
+                        stats["season_rank"],
+                        stats["competitive_wins"],
+                        stats["competitive_games"],
+                        stats["quick_play_wins"]])
+
+
+filename = check_filename(args.output_file)
+with get_writer(filename) as csv_writer:
+    while True:
+        stats = get_statistics(args.battletag, device=args.platform, region=args.region)
+        print("Your SR is {0}.".format(stats["season_rank"]))
+        print("{wins} qp wins.".format(wins=stats["quick_play_wins"]))
+        print("{wins} comp wins out of {games} games.".format(wins=stats["competitive_wins"], games=stats["competitive_games"]))
+        save_statistics(stats, csv_writer)
+        linux_warning = retrigger(linux_warning=linux_warning)
 
