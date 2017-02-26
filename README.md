@@ -7,11 +7,11 @@ Ever check your SR at the end of a season and wonder how you lost 1000 points? I
 * Download or `git clone` the repository
 * Install the `requests` and `bs4` (AKA BeautifulSoup4) python packages via `pip`
 ** `pip install -U requests bs4`
-* Run the script through the command line!
+* Run the script through the command line! Try doing `python3 . --help` to get more info about the command line options
 
 
 # Project Status
-After a Friday night coding session, I got an MVP working! Doesn't listen for hotkeys yet, and doesn't save any data. #2 will be easy, #1 requires root on Linux, so more difficult to test.
+After 2 nights of coding, It's working as a command line application!
 
 # MVP Goals
 A command-line application that...
