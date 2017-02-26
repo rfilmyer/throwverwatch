@@ -36,7 +36,9 @@ def assemble_url(battletag: str, device: str = 'pc', region: str = 'us') -> str:
     :return:
     """
     username = battletag.replace('#', '-')
-    return "https://playoverwatch.com/en-us/career/{device}/{region}/{username}".format(device=device, region=region, username=username)
+    return "https://playoverwatch.com/en-us/career/{device}/{region}/{username}".format(device=device,
+                                                                                        region=region,
+                                                                                        username=username)
 
 
 def get_page(url: str, session: requests.Session = None) -> BeautifulSoup:
@@ -47,6 +49,7 @@ def get_page(url: str, session: requests.Session = None) -> BeautifulSoup:
     response = session.get(url)
 
     return BeautifulSoup(response.text, 'html.parser')
+
 
 def find_stat_in_table(stat, div):
     """
@@ -84,16 +87,26 @@ def parse_stats_page(soup: BeautifulSoup) -> dict:
     :param soup: A parsed copy of the PlayOverwatch.com stats page for a user.
     :return: dict
     """
-    stats = {}
-    stats["season_rank"] = soup.find(class_="competitive-rank").div.text
 
-    all_heroes_category_id = "0x02E00000FFFFFFFF"
-    quick_play_stats = soup.find(id="quickplay").find(attrs={"data-category-id": all_heroes_category_id}).find_all("div")
+    image_to_rank = {"7": "Grandmaster",
+                     "6": "Master",
+                     "5": "Diamond",
+                     "4": "Platinum",
+                     "3": "Gold",
+                     "2": "Silver",
+                     "1": "Bronze"}
+
+    stats = {"skill_rating": soup.find(class_="competitive-rank").div.text,
+             "rank": image_to_rank.get(soup.find(class_="competitive-rank").img["src"][-5])}
+
+
+    all_heroes_attr = {"data-category-id": "0x02E00000FFFFFFFF"}
+    quick_play_stats = soup.find(id="quickplay").find(attrs=all_heroes_attr).find_all("div")
     quick_play_game_game_stats = next(div for div in quick_play_stats if div.table.thead.span.text == "Game")
-    #stats["quick_play_games"] = find_stat_in_table("Games Played", quick_play_game_game_stats)
+    # stats["quick_play_games"] = find_stat_in_table("Games Played", quick_play_game_game_stats)
     stats["quick_play_wins"] = find_stat_in_table("Games Won", quick_play_game_game_stats)
 
-    competitive_stats = soup.find(id="competitive").find(attrs={"data-category-id": all_heroes_category_id}).find_all("div")
+    competitive_stats = soup.find(id="competitive").find(attrs=all_heroes_attr).find_all("div")
     competitive_game_stats = next(div for div in competitive_stats if div.table.thead.span.text == "Game")
     stats["competitive_games"] = find_stat_in_table("Games Played", competitive_game_stats)
     stats["competitive_wins"] = find_stat_in_table("Games Won", competitive_game_stats)
@@ -125,7 +138,8 @@ def retrigger(hotkey: str = 'home', linux_warning: bool = False):
     """
     Blocks waiting for a hotkey (or enter) to be pressed.
     :param hotkey: The hotkey/key combination to listen for. See the `keyboard` library for documentation.
-    :param linux_warning: Hotkeys do not work on linux. If this parameter is False, it will send a warning on a Linux machine.
+    :param linux_warning: Hotkeys do not work on linux.
+            If this parameter is False, it will send a warning on a Linux machine.
     :return: Whether the user has been warned at some point.
     """
     try:
@@ -133,12 +147,12 @@ def retrigger(hotkey: str = 'home', linux_warning: bool = False):
     except ImportError:
         just_warned = False
         if not linux_warning:
-            logging.warning("You must be root in order to register hotkeys on linux. Press enter instead to refresh stats")
+            logging.warning("You must be root in order to register hotkeys on linux. "
+                            "Press enter instead to refresh stats")
             just_warned = True
         input()
         return linux_warning or just_warned
 
-linux_warning = False
 
 def check_filename(filename: str = None) -> str:
     """
@@ -146,41 +160,40 @@ def check_filename(filename: str = None) -> str:
     :param filename:
     :return: A validated filename
     """
-    invalid_file = False
     if filename:
         if os.path.exists(filename):
             return filename
-        else:
-            invalid_file = True
-    else:
-        invalid_file = True
-    if invalid_file:
-        # make a new file with a specific filename
-        def make_default_filename():
-            return "throwverwatch-{datetime}.csv".format(datetime=datetime.now().strftime("%Y%m%d-%H%M%S"))
 
-        def make_filename_with_fudge(fudge):
-            return "throwverwatch-{datetime}-{fudge}.csv".format(datetime=datetime.now().strftime("%Y%m%d-%H%M%S"), fudge=fudge)
+    # make a new file with a specific filename
+    def make_default_filename():
+        return "throwverwatch-{datetime}.csv".format(datetime=datetime.now().strftime("%Y%m%d-%H%M%S"))
 
-        if not os.path.exists(make_default_filename()):
-            filename = make_default_filename()
-        while os.path.exists(make_default_filename()):
-            fudge = 1
-            while os.path.exists(make_filename_with_fudge(fudge)):
-                fudge += 1
-                if fudge > 1000:
-                    raise IOError("Tried creating a new CSV, but too many files named like {filename}".format(filename=make_filename_with_fudge(fudge)))
-            if not os.path.exists(make_filename_with_fudge(fudge)):
-                filename = make_filename_with_fudge(fudge)
-                break
-        return filename
-        # with open(filename, 'w') as csvfile:
-        #     writer = csv.writer(csvfile)
-        #     writer.writerow(["Time", "SR", "Competitive Wins", "Competitive Games", "Quick Play Wins"])
-        #     return writer
+    def make_filename_with_fudge(fudge_factor):
+        return "throwverwatch-{datetime}-{fudge}.csv".format(datetime=datetime.now().strftime("%Y%m%d-%H%M%S"),
+                                                             fudge=fudge_factor)
+
+    if not os.path.exists(make_default_filename()):
+        filename = make_default_filename()
+    while os.path.exists(make_default_filename()):
+        fudge = 1
+        while os.path.exists(make_filename_with_fudge(fudge)):
+            fudge += 1
+            if fudge > 1000:
+                raise IOError("Tried creating a new CSV, "
+                              "but too many files named like {}".format(make_filename_with_fudge(fudge)))
+        if not os.path.exists(make_filename_with_fudge(fudge)):
+            filename = make_filename_with_fudge(fudge)
+            break
+    return filename
+
 
 @contextmanager
-def get_writer(filename):
+def get_writer(filename: str):
+    """
+    Yields a CSV writer for a file. If the file doesn't exist yet, it initializes it with a header row.
+    :param filename:
+    :return:
+    """
     if os.path.exists(filename):
         csvfile = open(filename, 'a')
         yield csv.writer(csvfile)
@@ -188,26 +201,27 @@ def get_writer(filename):
     else:
         csvfile = open(filename, 'w')
         writer = csv.writer(csvfile)
-        writer.writerow(["Time", "SR", "Competitive Wins", "Competitive Games", "Quick Play Wins"])
+        writer.writerow(["Time", "SR", "Rank", "Competitive Wins", "Competitive Games", "Quick Play Wins"])
         yield writer
         csvfile.close()
 
 
 def save_statistics(stats: dict, writer: csv.writer):
-        writer.writerow([datetime.now().isoformat(" "),
-                        stats["season_rank"],
+        writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        stats["skill_rating"],
+                        stats["rank"],
                         stats["competitive_wins"],
                         stats["competitive_games"],
                         stats["quick_play_wins"]])
 
-
-filename = check_filename(args.output_file)
-with get_writer(filename) as csv_writer:
+warned_linux = False
+csv_filename = check_filename(args.output_file)
+with get_writer(csv_filename) as csv_writer:
     while True:
-        stats = get_statistics(args.battletag, device=args.platform, region=args.region)
-        print("Your SR is {0}.".format(stats["season_rank"]))
-        print("{wins} qp wins.".format(wins=stats["quick_play_wins"]))
-        print("{wins} comp wins out of {games} games.".format(wins=stats["competitive_wins"], games=stats["competitive_games"]))
-        save_statistics(stats, csv_writer)
-        linux_warning = retrigger(linux_warning=linux_warning)
-
+        player_statistics = get_statistics(args.battletag, device=args.platform, region=args.region)
+        print("Your SR is {0}.".format(player_statistics["skill_rating"]))
+        print("{wins} qp wins.".format(wins=player_statistics["quick_play_wins"]))
+        print("{wins} comp wins out of {games} games.".format(wins=player_statistics["competitive_wins"],
+                                                              games=player_statistics["competitive_games"]))
+        save_statistics(player_statistics, csv_writer)
+        warned_linux = retrigger(linux_warning=warned_linux)
