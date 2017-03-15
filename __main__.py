@@ -6,12 +6,18 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import keyboard
+from bs4 import BeautifulSoup
 
-from scrape import get_statistics
+import scrape
 
 logger = logging.getLogger("throwverwatch")
 
 parser = argparse.ArgumentParser(description="Track Overwatch Stats")
+parser.add_argument("--from", dest="source", default=None,
+                    help="Scrape a downloaded copy of the webpage, then quit. "
+                         "Ignores battletag, region, platform arguments if set.")
+parser.add_argument("--date", dest="date", default='',
+                    help="If using --from, use this date/time instead of today's.")
 parser.add_argument("battletag", nargs="?", default="Calvin#1337",
                     help="Your Battle.net username in the format 'Calvin#1337'")
 parser.add_argument("output_file", nargs="?", default=None, help="The CSV file in which to save stats.")
@@ -25,6 +31,7 @@ args = parser.parse_args()
 HEROES = ["Genji", "McCree", "Pharah", "Reaper", "Soldier: 76", "Sombra", "Tracer", "Bastion", "Hanzo", "Junkrat",
           "Mei", "Torbjörn", "Widowmaker", "D.Va", "Reinhardt", "Roadhog", "Winston", "Zarya", "Ana", "Lúcio", "Mercy",
           "Symmetra", "Zenyatta"]
+
 
 def retrigger(hotkey: str = 'home', linux_warning: bool = False):
     """
@@ -44,6 +51,7 @@ def retrigger(hotkey: str = 'home', linux_warning: bool = False):
             just_warned = True
         input()
         return linux_warning or just_warned
+
 
 def check_filename(filename: str = None) -> str:
     """
@@ -77,6 +85,7 @@ def check_filename(filename: str = None) -> str:
             break
     return filename
 
+
 @contextmanager
 def get_writer(filename: str):
     """
@@ -96,8 +105,8 @@ def get_writer(filename: str):
         csvfile.close()
 
 
-def save_statistics(stats: dict, writer: csv.writer):
-        writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+def save_statistics(stats: dict, writer: csv.writer, date: str = ''):
+        writer.writerow([date if date else datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         stats["skill_rating"],
                         stats["rank"],
                         stats["competitive_wins"],
@@ -110,11 +119,17 @@ print("Collecting stats for battletag {bt} in region {reg} and platform {plat}".
                                                                                        reg=args.region,
                                                                                        plat=args.platform))
 with get_writer(csv_filename) as csv_writer:
-    while True:
-        player_statistics = get_statistics(args.battletag, device=args.platform, region=args.region)
-        print("Your SR is {0}.".format(player_statistics["skill_rating"]))
-        print("{wins} qp wins.".format(wins=player_statistics["quick_play_wins"]))
-        print("{wins} comp wins out of {games} games.".format(wins=player_statistics["competitive_wins"],
-                                                              games=player_statistics["competitive_games"]))
-        save_statistics(player_statistics, csv_writer)
-        warned_linux = retrigger(hotkey=args.hotkey, linux_warning=warned_linux)
+    if args.source:
+        with open(args.source, 'r') as html_file:
+            page = BeautifulSoup(html_file.read(), "html.parser")
+            player_statistics = scrape.parse_stats_page(page)
+            save_statistics(player_statistics, csv_writer, date=args.date)
+    else:
+        while True:
+            player_statistics = scrape.get_statistics(args.battletag, device=args.platform, region=args.region)
+            print("Your SR is {0}.".format(player_statistics["skill_rating"]))
+            print("{wins} qp wins.".format(wins=player_statistics["quick_play_wins"]))
+            print("{wins} comp wins out of {games} games.".format(wins=player_statistics["competitive_wins"],
+                                                                  games=player_statistics["competitive_games"]))
+            save_statistics(player_statistics, csv_writer)
+            warned_linux = retrigger(hotkey=args.hotkey, linux_warning=warned_linux)

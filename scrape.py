@@ -57,6 +57,8 @@ def find_stat_in_table(stat, div):
                 return tr.find_all("td")[1].text
 
 
+
+
 def parse_stats_page(soup: BeautifulSoup) -> dict:
     """
     Extracts player statistics from a web page parsed by BeautifulSoup.
