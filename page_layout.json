@@ -1,0 +1,89 @@
+{
+  "hero_stats": [
+  	{"name": "Time Played", "key": "time_played"},
+  	{"name": "Games Won", "key": "games_won"},
+  	{"name": "Win Percentage", "key": "win_pct"}, 
+  	{"name": "Weapon Accuracy", "key": "weapon_accuracy"},
+  	{"name": "Eliminations per Life", "key": "eliminations_per_life"},
+  	{"name": "Multikill - Best", "key": "multikills_best"},
+  	{"name": "Objective Kills - Average", "key": "objective_kills_avg"}
+  ],
+  "career_stats": [
+    {
+      "sectionName": "Combat",
+      "stats": [
+        {"name": "Melee Final Blow", "key": "melee_final_blows"},
+        {"name": "Solo Kill", "key": "solo_kills"},
+        {"name": "Objective Kill", "key": "objective_kills"},
+        {"name": "Final Blow", "key": "final_blows"},
+        {"name": "Damage Done", "key": "damage_done"},
+        {"name": "Elimination", "key": "eliminations"},
+        {"name": "Environmental Kill", "key": "enviro_kills"},
+        {"name": "Multikill", "key": "multikills"}
+    ]},
+    {
+      "sectionName": "Assists",
+      "stats": [
+        {"name": "Healing Done", "key": "healing_done"},
+        {"name": "Teleporter Pad", "suffix": "Destroyed", "key": "teleporter_pads_destroyed"}
+    ]},
+    {"sectionName": "Deaths", "stats": [
+    	{"name": "Death", "key": "deaths"},
+    	{"name": "Environmental Death", "key": "enviro_deaths"}
+    ]},
+    {"sectionName": "Match Awards", "stats": [
+    	{"name": "Card", "key": "cards"},
+    	{"name": "Medal", "key": "medals"},
+    	{"name": "Medal", "suffix": "- Gold", "key": "medals_gold"},
+    	{"name": "Medal", "suffix": "- Silver", "key": "medals_silver"},
+    	{"name": "Medal", "suffix": "- Bronze", "key": "medals_bronze"}
+    ]},
+    {"sectionName": "Best", "stats": [
+    	{"name": "Elimination", "suffix": "- Most in Game", "key": "eliminations_best"},
+    	{"name": "Final Blow", "suffix": "- Most in Game", "key": "final_blows_best"},
+    	{"name": "Damage Done", "suffix": "- Most in Game", "key": "damage_done_best"},
+    	{"name": "Healing Done", "suffix": "- Most in Game", "key": "healing_done_best"},
+    	{"name": "Defensive Assist", "suffix": "- Most in Game", "key": "defensive_assists_best"},
+    	{"name": "Offensive Assist", "suffix": "- Most in Game", "key": "offensive_assists_best"},
+    	{"name": "Objective Kill", "suffix": "- Most in Game", "key": "objective_kills_best"},
+    	{"name": "Objective Time", "suffix": "- Most in Game", "key": "objective_time_best"},
+    	{"name": "Multikill", "suffix": "- Best", "key": "multikills_best"},
+    	{"name": "Solo Kill", "suffix": "- Most in Game", "key": "solo_kills_best"},
+    	{"name": "Time Spent on Fire", "suffix": "- Most in Game", "key": "on_fire_best"}
+
+    ]},
+    {
+    	"sectionName": "Average", "stats": [
+    		{"name": "Melee Final Blow", "suffix": "- Average", "key": "melee_final_blows_avg"},
+    		{"name": "Time Spent on Fire", "suffix": "- Average", "key": "on_fire_avg"},
+    		{"name": "Solo Kill", "suffix": "- Average", "key": "solo_kills_avg"},
+    		{"name": "Objective Time", "suffix": "- Average", "key": "objective_time_avg"},
+    		{"name": "Objective Kills", "suffix": "- Average", "key": "objective_kills_avg"},
+    		{"name": "Healing Done", "suffix": "- Average", "key": "healing_done_avg"},
+    		{"name": "Final Blow", "suffix": "- Average", "key": "final_blows_avg"},
+    		{"name": "Death", "suffix": "- Average", "key": "deaths_avg"},
+    		{"name": "Damage Done", "suffix": "- Average", "key": "damage_done_avg"},
+    		{"name": "Elimination", "suffix": "- Average", "key": "eliminations_avg"}
+   	]},
+    {
+    	"sectionName": "Game", "stats": [
+    		{"name": "Game", "suffix": "Played", "key": "games_played"},
+    		{"name": "Game", "suffix": "Won", "key": "games_won"},
+    		{"name": "Time Spent on Fire", "key": "on_fire"},
+    		{"name": "Objective Time", "key": "objective_time"},
+    		{"name": "Time Played", "key": "time_played"}
+    ]},
+    {
+    	"sectionName": "Miscellaneoud", "stats": [
+    		{"name": "Melee Final Blow", "suffix": "- Most in Game", "key": "melee_final_blows_best"},
+    		{"name": "Turret", "suffix": "Destroyed", "suffix": "- Most in Game", "key": "turrets_destroyed_best"},
+    		{"name": "Environmental Kill", "suffix": "- Most in Game", "key": "enviro_kills_best"},
+    		{"name": "Kill Streak", "suffix": "- Best", "key": "killstreak_best"},
+    		{"name": "Turret", "suffix": "Destroyed", "key": "turrets_destroyed"},
+    		{"name": "Game", "suffix": "Tied", "key": "games_tied"},
+    		{"name": "Game", "suffix": "Lost", "key": "games_lost"},
+    		{"name": "Offensive Assist", "key": "offensive_assists"},
+    		{"name": "Defensive Assist", "key": "defensive_assists"}
+    ]}
+  ]
+}

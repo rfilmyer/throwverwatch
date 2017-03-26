@@ -27,13 +27,13 @@ def get_page(url: str, session: requests.Session = None) -> BeautifulSoup:
     return BeautifulSoup(response.text, 'html.parser')
 
 
-def find_stat_in_table(stat, div):
+def find_stat_in_table(stat, div, suffix = None):
     """
     Table rows are formatted like so...
     <tbody>
         <tr>
-            <td>Melee Final Blows</td>
-            <td>167</td>
+            <td>Melee Final Blow</td>
+            <td>1</td>
         </tr>
         <tr>
             <td>Solo Kills</td>
@@ -46,15 +46,25 @@ def find_stat_in_table(stat, div):
     </tbody>
 
     This is a convenient function to extract a statistic, given its name.
+    Annoying edge cases: In the English-language version of the page, stats with a value of 1 are singularized.
+    Example: "Melee Final Blows: 167", but "Melee Final Blow: 1"
+    Even better, they are singularized in stat averages as well.
+    Example: "Objective Kills - Most In Game: 2,000", but "Objective Kill - Most In Game: 1"
 
-    :param stat: The name of a statistic (Ex: "Melee Final Blows", "Medals - Gold")
+    :param stat: The name of a statistic, in the singular. (Ex: "Melee Final Blow", "Medal")
     :param div: could also be a tbody in the future
+    :param suffix: If the statistic has a suffix, put that suffix here, excluding the initial space
+        (Ex: "Medals - Gold" -> stat="Medal", suffix="- Gold")
     :return:
     """
     for tr in div.find_all("tr"):
         if tr.td:
-            if tr.td.text == stat:
-                return tr.find_all("td")[1].text
+            if suffix:
+                if tr.td.text[:-len(suffix)] == suffix and tr.td.text.rstrip(suffix).rstrip('s') == stat:
+                    return tr.find_all("td")[1].text
+            else:
+                if tr.td.text.rstrip('s') == stat:
+                    return tr.find_all("td")[1].text
 
 
 
