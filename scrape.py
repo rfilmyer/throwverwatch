@@ -1,6 +1,19 @@
-import requests
-from bs4 import BeautifulSoup
+from typing import List, Dict
+import json
+import unicodedata
+import logging
 
+import requests
+import bs4
+
+logger = logging.getLogger("throwverwatch")
+
+HEROES = ["Genji", "McCree", "Pharah", "Reaper", "Soldier: 76", "Sombra", "Tracer", "Bastion", "Hanzo", "Junkrat",
+          "Mei", "Torbjörn", "Widowmaker", "D.Va", "Orisa", "Reinhardt", "Roadhog", "Winston", "Zarya", "Ana", "Lúcio", "Mercy",
+          "Symmetra", "Zenyatta"]
+
+with open("page_layout.json") as f:
+    PAGE_LAYOUT = json.load(f)
 
 def assemble_url(battletag: str, device: str = 'pc', region: str = 'us') -> str:
     """
@@ -17,17 +30,27 @@ def assemble_url(battletag: str, device: str = 'pc', region: str = 'us') -> str:
                                                                                         username=username)
 
 
-def get_page(url: str, session: requests.Session = None) -> BeautifulSoup:
+def get_page(url: str, session: requests.Session = None) -> bs4.BeautifulSoup:
     """
     Grabs a webpage and parses it with BeautifulSoup
     """
     session = session if session else requests
     response = session.get(url)
 
-    return BeautifulSoup(response.text, 'html.parser')
+    return bs4.BeautifulSoup(response.text, 'html.parser')
+
+def find_table(header: str, div: bs4.element.Tag) -> bs4.element.Tag:
+    """
+    Find the first table in a div with matching header text
+    :param header:
+    :param div:
+    :return:
+    """
+    logger.debug(header)
+    return next((table for table in div.find_all("table") if table.thead.tr.text == header), None)
 
 
-def find_stat_in_table(stat, div, suffix = None):
+def find_stat_in_table(stat:str, div: bs4.element.Tag, suffix:str = None) -> str:
     """
     Table rows are formatted like so...
     <tbody>
@@ -60,22 +83,44 @@ def find_stat_in_table(stat, div, suffix = None):
     for tr in div.find_all("tr"):
         if tr.td:
             if suffix:
-                if tr.td.text[:-len(suffix)] == suffix and tr.td.text.rstrip(suffix).rstrip('s') == stat:
+                if tr.td.text[:-len(suffix)] == suffix and tr.td.text.rstrip(suffix).rstrip().rstrip('s') == stat:
                     return tr.find_all("td")[1].text
             else:
                 if tr.td.text.rstrip('s') == stat:
                     return tr.find_all("td")[1].text
 
 
+def normalize_string(string: str) -> str:
+    normalized = ''.join(c for c in unicodedata.normalize('NFD', string) if unicodedata.category(c) != 'Mn')
+    alnum_lower = ''.join(c for c in normalized.lower() if c.isalnum())
+    return alnum_lower
 
 
-def parse_stats_page(soup: BeautifulSoup) -> dict:
+HeroDict = Dict[str, str]
+
+
+def get_heroes_from_selection_menu(soup: bs4.BeautifulSoup) -> List[HeroDict]:
+    select_attrs = {"data-js": "career-select", "data-group-id": "stats"}
+    hero_options = soup.find("select", attrs=select_attrs).find_all("option")
+    heroes = []
+    for option in hero_options:
+        heroes.append({"name": option.text, "normalized_name": normalize_string(option.text), "id": option["value"]})
+    heroes = heroes[1:] #first option is "All Heroes"
+    return heroes
+
+
+
+CareerStatDict = Dict[str, str]
+CareerStatList = List[CareerStatDict]
+
+def get_sr_and_rank(soup: bs4.BeautifulSoup) -> CareerStatList:
     """
-    Extracts player statistics from a web page parsed by BeautifulSoup.
-    :param soup: A parsed copy of the PlayOverwatch.com stats page for a user.
-    :return: dict
-    """
+    Finds the 2 main competitive stats on the page, Skill Rating (AKA SR) and Rank (from bronze to grandmaster).
+    Top 500 players will appear to be in Grandmaster.
 
+    :param soup: a webpage loaded through BeautifulSoup
+    :return: Dict containing "skill_rating", the player's Skill Rating, and "rank", the player's rank
+    """
     image_to_rank = {"7": "Grandmaster",
                      "6": "Master",
                      "5": "Diamond",
@@ -84,39 +129,81 @@ def parse_stats_page(soup: BeautifulSoup) -> dict:
                      "2": "Silver",
                      "1": "Bronze"}
 
-    stats = {"skill_rating": soup.find(class_="competitive-rank").div.text,
-             "rank": image_to_rank.get(soup.find(class_="competitive-rank").img["src"][-5])}
+    skill_rating = {"name": "Skill Rating", "key": "skill_rating", "value": soup.find(class_="competitive-rank").div.text}
+    rank = {"name": "Rank", "key": "rank", "value": image_to_rank.get(soup.find(class_="competitive-rank").img["src"][-5])}
+    return [skill_rating, rank]
+
+# career stats
+# hero stats
 
 
-    all_heroes_attr = {"data-category-id": "0x02E00000FFFFFFFF"}
-    quick_play_stats = soup.find(id="quickplay").find(attrs=all_heroes_attr).find_all("div")
-    quick_play_game_game_stats = next(div for div in quick_play_stats if div.table.thead.span.text == "Game")
-    # stats["quick_play_games"] = find_stat_in_table("Games Played", quick_play_game_game_stats)
-    stats["quick_play_wins"] = find_stat_in_table("Games Won", quick_play_game_game_stats)
 
-    competitive_stats = soup.find(id="competitive").find(attrs=all_heroes_attr).find_all("div")
-    competitive_game_stats = next(div for div in competitive_stats if div.table.thead.span.text == "Game")
-    stats["competitive_games"] = find_stat_in_table("Games Played", competitive_game_stats)
-    stats["competitive_wins"] = find_stat_in_table("Games Won", competitive_game_stats)
 
-    # This is dead code for now, I'll add this when I add the other 6 metrics
-    stats["heroes"] = {}
-    for hero_bar in soup.find(id="competitive").find(
-            attrs={"data-category-id": "overwatch.guid.0x0860000000000021"}).find_all(
-                class_="bar-text"):
-        hero = hero_bar.find(class_="title").text
-        unparsed_time = hero_bar.find(class_="description").text
-        if unparsed_time == '--':
-            time = 0
-        elif 'minute' in unparsed_time.split()[-1]:
-            time = int(unparsed_time.split()[0])
-        elif 'hour' in unparsed_time.split()[-1]:
-            time = 60 * int(unparsed_time.split()[0])
-        else:
-            time = None
-        stats["heroes"][hero] = time
+def get_career_stats(div: bs4.element.Tag) -> CareerStatList:
+    """
+
+    :param div: The innermost common <div> containing stats for a hero
+    :return:
+    """
+    stats = []
+    for section in PAGE_LAYOUT["career_stats"]:
+        table = find_table(section["sectionName"], div)
+        if table:
+            for stat_layout in section["stats"]:
+                stat = {"name": stat_layout["name"],
+                        "key": stat_layout["key"],
+                        "value": find_stat_in_table(stat_layout["name"],
+                                                    table,
+                                                    stat_layout["suffix"] if stat_layout.get("suffix") else None)}
+                stats.append(stat)
     return stats
 
 
-def get_statistics(battletag: str, device: str = 'pc', region: str = 'us', session: requests.Session = None) -> dict:
+def parse_stats_page(soup: bs4.BeautifulSoup) -> CareerStatList:
+    """
+    Extracts player statistics from a web page parsed by BeautifulSoup.
+    :param soup: A parsed copy of the PlayOverwatch.com stats page for a user.
+    :return: dict
+    """
+
+    competitive_rank = get_sr_and_rank(soup)
+    heroes = get_heroes_from_selection_menu(soup)
+    logger.debug([hero["name"] for hero in heroes])
+
+    all_game_stats = [] + competitive_rank
+    for game_mode in ["competitive", "quickplay"]:
+        section = soup.find(id=game_mode)
+        overall_stats = get_career_stats(section.find("div", attrs={"data-category-id": "0x02E00000FFFFFFFF"}))
+        all_hero_stats = [] + overall_stats
+        for hero in heroes:
+            logger.debug("Hero: {}".format(hero["name"]))
+            hero_div = section.find("div", attrs={"data-category-id": hero["id"]})
+            if hero_div:
+                hero_stats = get_career_stats(hero_div)
+                hero_stats_formatted = [{"name": "{stat} ({hero})".format(stat=stat["name"], hero=hero["name"]),
+                                         "key": "{stat}_{hero}".format(stat=stat["key"], hero=hero["normalized_name"]),
+                                         "value": stat["value"]} for stat in hero_stats]
+                all_hero_stats += hero_stats_formatted
+        for stat in all_hero_stats:
+            game_mode_stat = {"name": "{stat} - {game_mode}".format(stat=stat["name"], game_mode=game_mode),
+                              "key": "{stat}_{game_mode}".format(stat=stat["key"], game_mode=game_mode),
+                              "value": stat["value"]}
+            all_game_stats.append(game_mode_stat)
+
+    return all_game_stats
+
+def format_time_played(unparsed_time: str):
+    if unparsed_time == '--':
+        time = 0
+    elif 'second' in unparsed_time:
+        time = float(unparsed_time.split()[0]) / 60.0
+    elif 'minute' in unparsed_time.split()[-1]:
+        time = int(unparsed_time.split()[0])
+    elif 'hour' in unparsed_time.split()[-1]:
+        time = 60 * int(unparsed_time.split()[0])
+    else:
+        time = None
+    return time
+
+def get_statistics(battletag: str, device: str = 'pc', region: str = 'us', session: requests.Session = None) -> CareerStatList:
     return parse_stats_page(get_page(assemble_url(battletag, device=device, region=region), session=session))

@@ -74,9 +74,9 @@
     		{"name": "Time Played", "key": "time_played"}
     ]},
     {
-    	"sectionName": "Miscellaneoud", "stats": [
+    	"sectionName": "Miscellaneous", "stats": [
     		{"name": "Melee Final Blow", "suffix": "- Most in Game", "key": "melee_final_blows_best"},
-    		{"name": "Turret", "suffix": "Destroyed", "suffix": "- Most in Game", "key": "turrets_destroyed_best"},
+    		{"name": "Turret", "suffix": "Destroyed - Most in Game", "key": "turrets_destroyed_best"},
     		{"name": "Environmental Kill", "suffix": "- Most in Game", "key": "enviro_kills_best"},
     		{"name": "Kill Streak", "suffix": "- Best", "key": "killstreak_best"},
     		{"name": "Turret", "suffix": "Destroyed", "key": "turrets_destroyed"},
