@@ -25,7 +25,8 @@
       "sectionName": "Assists",
       "stats": [
         {"name": "Healing Done", "key": "healing_done"},
-        {"name": "Teleporter Pad", "suffix": "Destroyed", "key": "teleporter_pads_destroyed"}
+        {"name": "Teleporter Pad", "suffix": "Destroyed", "key": "teleporter_pads_destroyed"},
+        {"name": "Turret", "suffix": "Destroyed", "key": "turrets_destroyed"}
     ]},
     {"sectionName": "Deaths", "stats": [
     	{"name": "Death", "key": "deaths"},

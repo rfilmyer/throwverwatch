@@ -98,7 +98,7 @@ def get_writer(filename: str):
         csvfile.close()
     else:
         needs_header = True
-        csvfile = open(filename, 'w')
+        csvfile = open(filename, 'w+')
         writer = csv.writer(csvfile)
         yield writer
         csvfile.close()
@@ -122,10 +122,10 @@ with get_writer(csv_filename) as csv_writer:
     if args.source:
         with open(args.source, 'r') as html_file:
             page = BeautifulSoup(html_file.read(), "html.parser")
-            player_statistics = scrape.parse_stats_page(page)
-            if needs_header:
-                write_header(player_statistics, csv_writer)
-            save_statistics(player_statistics, csv_writer, date=args.date)
+        player_statistics = scrape.parse_stats_page(page)
+        if needs_header:
+            write_header(player_statistics, csv_writer)
+        save_statistics(player_statistics, csv_writer, date=args.date)
     else:
         while True:
             player_statistics = scrape.get_statistics(args.battletag, device=args.platform, region=args.region)

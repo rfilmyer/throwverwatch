@@ -83,7 +83,7 @@ def find_stat_in_table(stat:str, div: bs4.element.Tag, suffix:str = None) -> str
     for tr in div.find_all("tr"):
         if tr.td:
             if suffix:
-                if tr.td.text[:-len(suffix)] == suffix and tr.td.text.rstrip(suffix).rstrip().rstrip('s') == stat:
+                if suffix in tr.td.text and tr.td.text.rstrip(suffix).rstrip().rstrip('s') == stat:
                     return tr.find_all("td")[1].text
             else:
                 if tr.td.text.rstrip('s') == stat:
@@ -148,13 +148,15 @@ def get_career_stats(div: bs4.element.Tag) -> CareerStatList:
     stats = []
     for section in PAGE_LAYOUT["career_stats"]:
         table = find_table(section["sectionName"], div)
+        if section["sectionName"] == "Game":
+            pass
         if table:
             for stat_layout in section["stats"]:
                 stat = {"name": stat_layout["name"],
                         "key": stat_layout["key"],
                         "value": find_stat_in_table(stat_layout["name"],
                                                     table,
-                                                    stat_layout["suffix"] if stat_layout.get("suffix") else None)}
+                                                    stat_layout.get("suffix"))}
                 stats.append(stat)
     return stats
 
