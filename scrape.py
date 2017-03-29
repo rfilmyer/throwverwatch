@@ -2,6 +2,7 @@ from typing import List, Dict
 import json
 import unicodedata
 import logging
+import os, sys
 
 import requests
 import bs4
@@ -12,7 +13,7 @@ HEROES = ["Genji", "McCree", "Pharah", "Reaper", "Soldier: 76", "Sombra", "Trace
           "Mei", "Torbjörn", "Widowmaker", "D.Va", "Orisa", "Reinhardt", "Roadhog", "Winston", "Zarya", "Ana", "Lúcio", "Mercy",
           "Symmetra", "Zenyatta"]
 
-with open("page_layout.json") as f:
+with open(os.path.join(sys.path[0], "page_layout.json")) as f:
     PAGE_LAYOUT = json.load(f)
 
 def assemble_url(battletag: str, device: str = 'pc', region: str = 'us') -> str:
