@@ -82,12 +82,14 @@ def find_stat_in_table(stat:str, div: bs4.element.Tag, suffix:str = None) -> str
     """
     for tr in div.find_all("tr"):
         if tr.td:
+          row_label = tr.td.text
+          row_value = tr.find_all("td")[1].text
             if suffix:
-                if suffix in tr.td.text and tr.td.text.rstrip(suffix).rstrip().rstrip('s') == stat:
-                    return tr.find_all("td")[1].text
+                if row_label.endswith(suffix) and row_label[:-len(suffix)].rstrip(' ').rstrip('s') == stat:
+                    return row_value
             else:
-                if tr.td.text.rstrip('s') == stat:
-                    return tr.find_all("td")[1].text
+                if row_label.rstrip('s') == stat:
+                    return row_value
 
 
 def normalize_string(string: str) -> str:
